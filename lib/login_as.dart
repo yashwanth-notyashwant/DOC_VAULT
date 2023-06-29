@@ -24,18 +24,18 @@ class _FacultyLoginState extends State<FacultyLogin> {
 //
 
     List<Student> students = [
-      Student('Yashwanth R', '1', 'sem', 'dob', '12345'),
-      Student('Shreyas A T', '2', 'sem', 'dob', '12345'),
-      Student('yash', '3', 'sem', 'dob', '12345'),
-      Student('yash', '4', 'sem', 'dob', '12345'),
-      Student('yash', '5', 'sem', 'dob', '12345'),
+      Student('Test', '1', 'sem', 'dob', '12345'),
+      Student('Shreyas', '2', 'sem', 'dob', '12345'),
+      Student('Shre', '3', 'sem', 'dob', '12345'),
+      Student('Varun', '4', 'sem', 'dob', '12345'),
+      Student('Deepak', '5', 'sem', 'dob', '12345'),
     ];
     List<Faculty> faculty = [
-      Faculty('Yashwanth R', '10', 'sem', 'dob', '12345'),
+      Faculty('Faculty', '10', 'Asst. Professor', 'dob', '12345'),
       Faculty('Shreyas A T', '20', 'sem', 'dob', '12345'),
-      Faculty('yash', '30', 'sem', 'dob', '12345'),
-      Faculty('yash', '40', 'sem', 'dob', '12345'),
-      Faculty('yash', '50', 'sem', 'dob', '12345'),
+      Faculty('Test', '30', 'sem', 'dob', '12345'),
+      Faculty('Test2', '40', 'sem', 'dob', '12345'),
+      Faculty('Test3', '50', 'sem', 'dob', '12345'),
     ];
 
 //

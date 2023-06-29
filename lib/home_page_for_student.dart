@@ -7,12 +7,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ignore: must_be_immutable
 class HomePageStudent extends StatefulWidget {
   Student student;
 
   HomePageStudent({
+    super.key,
     required this.student,
   });
 
@@ -29,7 +31,7 @@ class _HomePageStudentState extends State<HomePageStudent> {
   getfile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc'],
+      allowedExtensions: ['pdf', 'doc', 'png', 'jpeg'],
     );
 
     if (result != null) {
@@ -52,22 +54,25 @@ class _HomePageStudentState extends State<HomePageStudent> {
       url = await snapshot.ref.getDownloadURL();
 
       print(url);
+      // ignore: unnecessary_null_comparison
       if (url != null && bytes != null) {
         Fluttertoast.showToast(
           msg: "Done Uploaded",
-          textColor: Colors.green,
+          textColor: Colors.black,
+          backgroundColor: Colors.white,
+          // webBgColor: Colors.white,
         );
       } else {
         Fluttertoast.showToast(
-          msg: "Something went wrong",
-          textColor: Colors.red,
-        );
+            msg: "Something went wrong",
+            textColor: Colors.red,
+            backgroundColor: Colors.white);
       }
     } on Exception catch (e) {
       Fluttertoast.showToast(
-        msg: e.toString(),
-        textColor: Colors.black,
-      );
+          msg: e.toString(),
+          textColor: Colors.black,
+          backgroundColor: Colors.white);
     }
   }
 
@@ -89,6 +94,137 @@ class _HomePageStudentState extends State<HomePageStudent> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Uploaded Files'),
+          content: Container(
+            height: 450,
+            width: 800,
+            child: ListView.builder(
+              itemCount: downloadUrls.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(fileNames[index]),
+                  onTap: () {
+                    launchUrl(Uri.parse(downloadUrls[index]));
+                    // Handle the download action here
+                    // You can use the downloadUrls[index] to download the file
+                    // Example: launch(url) to open the file in a browser or download manager
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Fetch messages from Firestore
+  Future<List<Map<String, dynamic>>> fetchMessages(String usn) async {
+    List<Map<String, dynamic>> messages = [];
+
+    try {
+      final userDocRef =
+          FirebaseFirestore.instance.collection('Users').doc(usn);
+      final subcollectionRef = userDocRef.collection('alpha');
+      final querySnapshot = await subcollectionRef.get();
+
+      querySnapshot.docs.forEach((doc) {
+        messages.add(doc.data());
+      });
+    } catch (error) {
+      print('yashwanth error Failed to fetch messages. Error: $error');
+    }
+
+    return messages;
+  }
+
+  // Display dialog with ListView.builder
+  dynamic showMessagesDialog(BuildContext context, String usn) async {
+    List<Map<String, dynamic>> messages = await fetchMessages(usn);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Uploaded Files'),
+          content: Container(
+            height: 450,
+            width: 800,
+            child: ListView.builder(
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(messages[index]['text']),
+                  onTap: () {
+                    // Handle the onTap action here
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+// here is what is I added on thursday up above
+
+  viewUploadedFilesForAccepted() async {
+    var storageRef =
+        FirebaseStorage.instance.ref().child('Accepted/${widget.student.usn}');
+    var result = await storageRef.listAll();
+    List<String> downloadUrls = [];
+    List<String> fileNames = [];
+    for (var fileRef in result.items) {
+      var downloadUrl = await fileRef.getDownloadURL();
+      var fileName = fileRef.name;
+      downloadUrls.add(downloadUrl);
+      fileNames.add(fileName);
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Accepted Files'),
+          content: Container(
+            height: 450,
+            width: 800,
+            child: ListView.builder(
+              itemCount: downloadUrls.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(fileNames[index]),
+                  onTap: () {
+                    launchUrl(Uri.parse(downloadUrls[index]));
+                    // Handle the download action here
+                    // You can use the downloadUrls[index] to download the file
+                    // Example: launch(url) to open the file in a browser or download manager
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  viewUploadedFilesForRejected() async {
+    var storageRef =
+        FirebaseStorage.instance.ref().child('Rejected/${widget.student.usn}');
+    var result = await storageRef.listAll();
+    List<String> downloadUrls = [];
+    List<String> fileNames = [];
+    for (var fileRef in result.items) {
+      var downloadUrl = await fileRef.getDownloadURL();
+      var fileName = fileRef.name;
+      downloadUrls.add(downloadUrl);
+      fileNames.add(fileName);
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Rejected  Files'),
           content: Container(
             height: 450,
             width: 800,
@@ -282,9 +418,82 @@ class _HomePageStudentState extends State<HomePageStudent> {
                       ),
                       textStyle: const TextStyle(fontSize: 20.0),
                     ),
-                    child: const Text('View uploaded documents '),
+                    child: const Text('View Pending documents '),
                   ),
                 ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 60,
+                      width: 120,
+                      margin: EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          // await viewUploadedFiles();
+                          await viewUploadedFilesForAccepted();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10.0,
+                          ),
+                          textStyle: const TextStyle(fontSize: 20.0),
+                        ),
+                        child: const Text('Accepted'),
+                      ),
+                    ),
+                    Container(
+                      height: 60,
+                      width: 120,
+                      margin: EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          // await viewUploadedFiles();
+                          await viewUploadedFilesForRejected();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10.0,
+                          ),
+                          textStyle: const TextStyle(fontSize: 20.0),
+                        ),
+                        child: const Text('Rejected'),
+                      ),
+                    ),
+                    Container(
+                      height: 60,
+                      width: 120,
+                      margin: EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          // await viewUploadedFiles();
+                          // await viewUploadedFilesForRejected();
+                          await showMessagesDialog(context, widget.student.usn);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueGrey,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10.0,
+                          ),
+                          textStyle: const TextStyle(fontSize: 15.0),
+                        ),
+                        child: const Text('Notificatoins'),
+                      ),
+                    ),
+                  ],
+                )
               ],
             ),
           )
@@ -300,7 +509,7 @@ class _HomePageStudentState extends State<HomePageStudent> {
                     )),
           );
         },
-        label: const Text('Logout !'),
+        label: const Text('Logout '),
         icon: const Icon(Icons.logout),
         backgroundColor: Colors.red,
       ),
